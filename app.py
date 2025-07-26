@@ -19,16 +19,33 @@ def whatsapp_reply():
     resp = MessagingResponse()
     msg = resp.message()
 
-    # Match input with category
-    valid_categories = ["vegetables", "grocery", "dairy", "fruits", "bakery"]
+    # Keyword to Category Mapping
+    keyword_map = {
+        "vegetable": "vegetables",
+        "veggies": "vegetables",
+        "grocery": "grocery",
+        "milk": "dairy",
+        "curd": "dairy",
+        "paneer": "dairy",
+        "dairy": "dairy",
+        "fruit": "fruits",
+        "apple": "fruits",
+        "banana": "fruits",
+        "bread": "bakery",
+        "cake": "bakery",
+        "bakery": "bakery"
+    }
+
     matched = None
-    for category in valid_categories:
-        if category in incoming_msg:
-            matched = category
+    for word in keyword_map:
+        if word in incoming_msg:
+            matched = keyword_map[word]
             break
 
     if matched:
-        filtered = vendors_df[(vendors_df['Category'] == matched) & (vendors_df['Location'] == "vidisha")]
+        filtered = vendors_df[
+            (vendors_df['Category'] == matched) & (vendors_df['Location'] == "vidisha")
+        ]
         if filtered.empty:
             msg.body(f"❌ No {matched} vendors found in Vidisha.")
         else:
@@ -41,12 +58,12 @@ def whatsapp_reply():
     else:
         msg.body(
             "👋 Welcome to Vconnect!\n"
-            "Type a category to get vendor info:\n"
+            "Type a category or item to get vendor info:\n"
             "• 'vegetables'\n"
             "• 'grocery'\n"
-            "• 'dairy'\n"
+            "• 'milk'\n"
             "• 'fruits'\n"
-            "• 'bakery'\n"
+            "• 'bread'\n"
             "Or type 'order' to place an order."
         )
 
