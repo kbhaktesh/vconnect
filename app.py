@@ -1,44 +1,56 @@
 from flask import Flask, request
 from twilio.twiml.messaging_response import MessagingResponse
-import csv
-import os
+import pandas as pd
 
 app = Flask(__name__)
 
-# Load vendor data from CSV
-vendors = []
-with open("vendors.csv", newline='', encoding='utf-8') as csvfile:
-    reader = csv.DictReader(csvfile)
-    for row in reader:
-        vendors.append(row)
+# Load vendors.csv
+vendors_df = pd.read_csv("vendors.csv")
+
+# Ensure consistent formatting
+vendors_df['Category'] = vendors_df['Category'].str.strip().str.lower()
+vendors_df['Location'] = vendors_df['Location'].str.strip().str.lower()
 
 @app.route("/whatsapp", methods=["POST"])
 def whatsapp_reply():
-    incoming_msg = request.values.get("Body", "").lower()
+    incoming_msg = request.values.get("Body", "").strip().lower()
     print(f"User: {incoming_msg}")
 
     resp = MessagingResponse()
     msg = resp.message()
 
-    matched_vendors = []
-
-    # Simple keyword search
-    for vendor in vendors:
-        category = vendor["Category"].lower()
-        location = vendor["Location"].lower()
+    # Match input with category
+    valid_categories = ["vegetables", "grocery", "dairy", "fruits", "bakery"]
+    matched = None
+    for category in valid_categories:
         if category in incoming_msg:
-            matched_vendors.append(f"{vendor['Name']} - {vendor['Phone']} ({vendor['Location']})")
+            matched = category
+            break
 
-    if matched_vendors:
-        response_text = "🔎 Vendors matching your request:\n" + "\n".join(matched_vendors)
-        msg.body(response_text)
+    if matched:
+        filtered = vendors_df[(vendors_df['Category'] == matched) & (vendors_df['Location'] == "vidisha")]
+        if filtered.empty:
+            msg.body(f"❌ No {matched} vendors found in Vidisha.")
+        else:
+            reply = f"🛍️ {matched.capitalize()} vendors in Vidisha:\n"
+            for _, row in filtered.iterrows():
+                reply += f"• {row['Name']} - {row['Phone']}\n"
+            msg.body(reply)
     elif "order" in incoming_msg:
-        msg.body("✅ Order placed. Vendor will contact you shortly.")
+        msg.body("✅ Order placed. The vendor will contact you shortly.")
     else:
-        msg.body("👋 Welcome to Vconnect!\nType what you’re looking for, e.g.:\n• 'vegetable'\n• 'milk'\n• 'order'")
+        msg.body(
+            "👋 Welcome to Vconnect!\n"
+            "Type a category to get vendor info:\n"
+            "• 'vegetables'\n"
+            "• 'grocery'\n"
+            "• 'dairy'\n"
+            "• 'fruits'\n"
+            "• 'bakery'\n"
+            "Or type 'order' to place an order."
+        )
 
     return str(resp)
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(port=10000)
