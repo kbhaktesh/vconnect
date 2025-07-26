@@ -4,12 +4,27 @@ import pandas as pd
 
 app = Flask(__name__)
 
-# Load vendors.csv
+# Load and clean the vendor data
 vendors_df = pd.read_csv("vendors.csv")
-
-# Ensure consistent formatting
 vendors_df['Category'] = vendors_df['Category'].str.strip().str.lower()
 vendors_df['Location'] = vendors_df['Location'].str.strip().str.lower()
+
+# Keyword-to-category map
+keyword_map = {
+    "vegetable": "vegetables",
+    "veggies": "vegetables",
+    "grocery": "grocery",
+    "milk": "dairy",
+    "curd": "dairy",
+    "paneer": "dairy",
+    "dairy": "dairy",
+    "fruit": "fruits",
+    "apple": "fruits",
+    "banana": "fruits",
+    "bread": "bakery",
+    "cake": "bakery",
+    "bakery": "bakery"
+}
 
 @app.route("/whatsapp", methods=["POST"])
 def whatsapp_reply():
@@ -19,37 +34,21 @@ def whatsapp_reply():
     resp = MessagingResponse()
     msg = resp.message()
 
-    # Keyword to Category Mapping
-    keyword_map = {
-        "vegetable": "vegetables",
-        "veggies": "vegetables",
-        "grocery": "grocery",
-        "milk": "dairy",
-        "curd": "dairy",
-        "paneer": "dairy",
-        "dairy": "dairy",
-        "fruit": "fruits",
-        "apple": "fruits",
-        "banana": "fruits",
-        "bread": "bakery",
-        "cake": "bakery",
-        "bakery": "bakery"
-    }
-
-    matched = None
+    matched_category = None
     for word in keyword_map:
         if word in incoming_msg:
-            matched = keyword_map[word]
+            matched_category = keyword_map[word]
             break
 
-    if matched:
+    if matched_category:
         filtered = vendors_df[
-            (vendors_df['Category'] == matched) & (vendors_df['Location'] == "vidisha")
+            (vendors_df['Category'] == matched_category) &
+            (vendors_df['Location'] == "vidisha")
         ]
         if filtered.empty:
-            msg.body(f"❌ No {matched} vendors found in Vidisha.")
+            msg.body(f"❌ No {matched_category} vendors found in Vidisha.")
         else:
-            reply = f"🛍️ {matched.capitalize()} vendors in Vidisha:\n"
+            reply = f"🛍️ {matched_category.capitalize()} vendors in Vidisha:\n"
             for _, row in filtered.iterrows():
                 reply += f"• {row['Name']} - {row['Phone']}\n"
             msg.body(reply)
@@ -58,12 +57,12 @@ def whatsapp_reply():
     else:
         msg.body(
             "👋 Welcome to Vconnect!\n"
-            "Type a category or item to get vendor info:\n"
+            "Type what you’re looking for, e.g.:\n"
             "• 'vegetables'\n"
             "• 'grocery'\n"
             "• 'milk'\n"
             "• 'fruits'\n"
-            "• 'bread'\n"
+            "• 'bakery'\n"
             "Or type 'order' to place an order."
         )
 
