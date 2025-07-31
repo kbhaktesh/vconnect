@@ -3,7 +3,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 
 app = Flask(__name__)
 
-# Sample vendor data
+# Vendor database (can be replaced with CSV reading if needed)
 vendors = {
     "vegetables": [
         {"name": "Fresh Veggies", "location": "Downtown", "contact": "123-456-7890"},
@@ -19,6 +19,10 @@ vendors = {
     ]
 }
 
+@app.route('/', methods=['GET'])
+def home():
+    return "✅ Vconnect WhatsApp Bot is live! Use /whatsapp with Twilio."
+
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_reply():
     msg = request.form.get('Body', '').strip().lower()
@@ -28,11 +32,12 @@ def whatsapp_reply():
         vendor_info = "\n".join(
             f"{v['name']} - {v['location']} - {v['contact']}" for v in vendors[msg]
         )
-        response.message(f"Here are the nearby {msg} vendors:\n{vendor_info}")
+        response.message(f"📦 Nearby {msg} vendors:\n{vendor_info}")
     else:
         response.message(
-            "Welcome to Vconnect! 🛒\nSend one of the following to get vendor info:\n"
-            "- vegetables\n- fruits\n- dairy"
+            "👋 Welcome to Vconnect!\n"
+            "Please send one of the following keywords:\n"
+            "• vegetables\n• fruits\n• dairy"
         )
 
     return str(response)
