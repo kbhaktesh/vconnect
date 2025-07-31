@@ -1,31 +1,41 @@
 from flask import Flask, request
-import pandas as pd
+from twilio.twiml.messaging_response import MessagingResponse
 
 app = Flask(__name__)
 
-# Load vendors data
-vendors_df = pd.read_csv("vendors.csv")
+# Sample vendor data
+vendors = {
+    "vegetables": [
+        {"name": "Fresh Veggies", "location": "Downtown", "contact": "123-456-7890"},
+        {"name": "Green Grocer", "location": "Uptown", "contact": "987-654-3210"}
+    ],
+    "fruits": [
+        {"name": "Fruit Basket", "location": "Midtown", "contact": "555-555-5555"},
+        {"name": "Tropical Fruits", "location": "Eastside", "contact": "444-444-4444"}
+    ],
+    "dairy": [
+        {"name": "Dairy Farm", "location": "Westside", "contact": "333-333-3333"},
+        {"name": "Milk & More", "location": "Southside", "contact": "222-222-2222"}
+    ]
+}
 
-# Helper function to filter vendors by category
-def get_vendors_by_category(category):
-    category = category.lower()
-    matches = vendors_df[vendors_df['Category'].str.lower() == category]
-    if matches.empty:
-        return "Sorry, no vendors found for that category."
-    result = "Here are some vendors:\n"
-    for _, row in matches.iterrows():
-        result += f"- {row['Name']} ({row['Location']}), Contact: {row['Phone']}\n"
-    return result
+@app.route('/whatsapp', methods=['POST'])
+def whatsapp_reply():
+    msg = request.form.get('Body', '').strip().lower()
+    response = MessagingResponse()
 
-@app.route("/whatsapp", methods=["POST"])
-def whatsapp_bot():
-    incoming_msg = request.values.get('Body', '').strip().lower()
-    response = get_vendors_by_category(incoming_msg)
-    
-    return f"""<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-    <Message>{response}</Message>
-</Response>"""
+    if msg in vendors:
+        vendor_info = "\n".join(
+            f"{v['name']} - {v['location']} - {v['contact']}" for v in vendors[msg]
+        )
+        response.message(f"Here are the nearby {msg} vendors:\n{vendor_info}")
+    else:
+        response.message(
+            "Welcome to Vconnect! 🛒\nSend one of the following to get vendor info:\n"
+            "- vegetables\n- fruits\n- dairy"
+        )
 
-if __name__ == "__main__":
-    app.run(debug=True)
+    return str(response)
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=5000)
