@@ -3,19 +3,22 @@ from twilio.twiml.messaging_response import MessagingResponse
 
 app = Flask(__name__)
 
-# Vendor database (can be replaced with CSV reading if needed)
 vendors = {
     "vegetables": [
-        {"name": "Fresh Veggies", "location": "Downtown", "contact": "123-456-7890"},
-        {"name": "Green Grocer", "location": "Uptown", "contact": "987-654-3210"}
+        {"name": "Ram Veggies", "location": "Vidisha", "contact": "9876543210"},
+        {"name": "Krishna Veggies", "location": "Vidisha", "contact": "9876054321"}
     ],
     "fruits": [
-        {"name": "Fruit Basket", "location": "Midtown", "contact": "555-555-5555"},
-        {"name": "Tropical Fruits", "location": "Eastside", "contact": "444-444-4444"}
+        {"name": "Fresh Fruits", "location": "Bhopal", "contact": "9897123540"}
     ],
     "dairy": [
-        {"name": "Dairy Farm", "location": "Westside", "contact": "333-333-3333"},
-        {"name": "Milk & More", "location": "Southside", "contact": "222-222-2222"}
+        {"name": "Dairy King", "location": "Vidisha", "contact": "9876345019"},
+        {"name": "Fresh Dairy", "location": "Vidisha", "contact": "9876123045"}
+    ],
+    "grocery": [
+        {"name": "Kirana Point", "location": "Vidisha", "contact": "9876543201"},
+        {"name": "Mohan Kirana", "location": "Vidisha", "contact": "9876541230"},
+        {"name": "All in One Store", "location": "Vidisha", "contact": "7654321890"}
     ]
 }
 
@@ -28,7 +31,9 @@ def whatsapp_reply():
     msg = request.form.get('Body', '').strip().lower()
     response = MessagingResponse()
 
-    if msg in vendors:
+    if not msg:
+        response.message("❌ Empty message received. Please send a valid keyword.")
+    elif msg in vendors:
         vendor_info = "\n".join(
             f"{v['name']} - {v['location']} - {v['contact']}" for v in vendors[msg]
         )
@@ -37,7 +42,7 @@ def whatsapp_reply():
         response.message(
             "👋 Welcome to Vconnect!\n"
             "Please send one of the following keywords:\n"
-            "• vegetables\n• fruits\n• dairy"
+            "• vegetables\n• fruits\n• dairy\n• grocery"
         )
 
     return str(response)
